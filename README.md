@@ -180,3 +180,55 @@ Cloud Run supplies `PORT`; the container listens on that port.
 5. Deploy the Pages project. Copy its site origin, such as
    `https://your-project.pages.dev`, and set Cloud Run's `ALLOWED_ORIGINS` to that
    exact origin. Redeploy or update the Cloud Run service after changing it.
+
+### Deploy both apps to Vercel
+
+The GitHub repository contains two apps, so create **two Vercel projects** from the
+same repository. Vercel supports FastAPI through its Python runtime and supports
+monorepos by setting a different root directory for each project.
+
+#### 1. Deploy the backend
+
+1. In the [Vercel dashboard](https://vercel.com/dashboard), select **Add New →
+   Project**, then import `Bossini67/Kanban`.
+2. Set **Root Directory** to `backend`. Vercel should detect FastAPI from
+   `requirements.txt` and `main.py`; leave the detected framework/build settings
+   at their defaults.
+3. Add these project environment variables for **Production**:
+   - `SUPABASE_URL`: your Supabase project URL.
+   - `SUPABASE_KEY`: your Supabase publishable (or legacy `anon`) key. Do not use
+     the Supabase secret or `service_role` key.
+   - `ALLOWED_ORIGINS`: `http://localhost:5173` for the initial deployment.
+4. Deploy the project. Copy its Vercel URL, for example
+   `https://kanban-api-your-team.vercel.app`.
+5. Check that `https://YOUR-BACKEND-URL.vercel.app/docs` opens. The Supabase
+   schema and public policies from `schema.sql` must already be applied.
+
+#### 2. Deploy the frontend
+
+1. From the Vercel dashboard, select **Add New → Project** and import
+   `Bossini67/Kanban` again as a separate project.
+2. Set **Root Directory** to `frontend`. Use the detected Vite settings, or set
+   the build command to `npm run build` and output directory to `dist`.
+3. Add the `VITE_API_URL` environment variable for **Production**, set to the
+   backend Vercel URL from the previous section, without a trailing slash.
+4. Deploy and copy the frontend's production URL.
+
+#### 3. Allow the frontend to call the backend
+
+1. Open the **backend** Vercel project settings and set `ALLOWED_ORIGINS` to the
+   frontend's exact production origin, for example
+   `https://kanban-your-team.vercel.app` (no trailing slash).
+2. Redeploy the backend so the setting takes effect.
+3. Refresh the frontend. To use Vercel preview deployments, add their exact
+   origins to `ALLOWED_ORIGINS` as a comma-separated list, then redeploy the
+   backend.
+
+Changing a Vercel environment variable requires a new deployment. Keep Supabase
+credentials in Vercel environment settings, never in GitHub or frontend
+environment variables. Since this app has no user sign-in, the policies in
+`schema.sql` allow public read/write access to the board; only use it for data
+that is okay to make public.
+
+For details, see Vercel's guides for [FastAPI deployments](https://vercel.com/docs/frameworks/backend/fastapi)
+and [monorepos](https://vercel.com/docs/monorepos).
